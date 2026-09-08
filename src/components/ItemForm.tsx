@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 
 import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 type Props = {
@@ -18,6 +20,7 @@ type Props = {
   ) => void;
 
   onCancel: () => void;
+  categories: string[];
   initialItem?: {
     name: string;
     category: string;
@@ -29,6 +32,7 @@ type Props = {
 export default function ItemForm({
   onSave,
   onCancel,
+  categories,
   initialItem,
 }: Props) {
   const [name, setName] = useState(initialItem?.name ?? "");
@@ -37,6 +41,8 @@ export default function ItemForm({
     initialItem ? String(initialItem.rating) : ""
   );
   const [notes, setNotes] = useState(initialItem?.notes ?? "");
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   useEffect(() => {
     setName(initialItem?.name ?? "");
@@ -101,12 +107,79 @@ export default function ItemForm({
         Category
       </Text>
 
-      <TextInput
-        value={category}
-        onChangeText={setCategory}
-        placeholder="Example: Movie, Mall, Restaurant..."
-        style={styles.input}
-      />
+      {creatingCategory ? (
+        <View style={styles.categoryInputRow}>
+          <TextInput
+            value={category}
+            onChangeText={setCategory}
+            placeholder="Example: Movie, Mall, Restaurant..."
+            style={[styles.input, styles.categoryTextInput]}
+            autoFocus
+          />
+          <Pressable
+            onPress={() => {
+              setCreatingCategory(false);
+              setCategory("");
+            }}
+            style={styles.cancelCategoryButton}
+          >
+            <Text style={styles.cancelCategoryText}>Cancel</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <>
+          <Pressable
+            onPress={() => setShowCategoryPicker(true)}
+            style={styles.selectInput}
+          >
+            <Text style={category ? styles.selectText : styles.placeholderText}>
+              {category || "Select a category"}
+            </Text>
+            <Text style={styles.chevron}>⌄</Text>
+          </Pressable>
+
+          <Modal
+            visible={showCategoryPicker}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowCategoryPicker(false)}
+          >
+            <Pressable
+              style={styles.modalBackdrop}
+              onPress={() => setShowCategoryPicker(false)}
+            >
+              <Pressable style={styles.categorySheet} onPress={() => undefined}>
+                <Text style={styles.sheetTitle}>Choose category</Text>
+                <ScrollView style={styles.categoryOptions}>
+                  {categories.filter((option) => option !== "All").map((option) => (
+                    <Pressable
+                      key={option}
+                      onPress={() => {
+                        setCategory(option);
+                        setShowCategoryPicker(false);
+                      }}
+                      style={styles.categoryOption}
+                    >
+                      <Text style={styles.categoryOptionText}>{option}</Text>
+                      {option === category ? <Text style={styles.checkmark}>✓</Text> : null}
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                <Pressable
+                  onPress={() => {
+                    setCategory("");
+                    setCreatingCategory(true);
+                    setShowCategoryPicker(false);
+                  }}
+                  style={styles.newCategoryButton}
+                >
+                  <Text style={styles.newCategoryText}>+ Create new category</Text>
+                </Pressable>
+              </Pressable>
+            </Pressable>
+          </Modal>
+        </>
+      )}
 
       <Text style={styles.label}>
         Rating (0 - 10)
@@ -158,32 +231,144 @@ export default function ItemForm({
 
 const styles = StyleSheet.create({
   form: {
-    padding: 20,
+    padding: 18,
     backgroundColor: "#ffffff",
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#dddddd",
+    borderColor: "#e1e3e8",
+    boxShadow: "0px 4px 12px rgba(28, 36, 48, 0.06)",
+    elevation: 3,
   },
 
   title: {
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "bold",
-    marginBottom: 20,
+    color: "#17202b",
+    marginBottom: 16,
   },
 
   label: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
+    color: "#596170",
     marginBottom: 6,
     marginTop: 12,
   },
 
   input: {
     borderWidth: 1,
-    borderColor: "#cccccc",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#dfe1e7",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     fontSize: 16,
+    color: "#17202b",
+    backgroundColor: "#fbfbfc",
+  },
+
+  categoryInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  categoryTextInput: {
+    flex: 1,
+  },
+
+  cancelCategoryButton: {
+    paddingHorizontal: 8,
+  },
+
+  cancelCategoryText: {
+    color: "#c75050",
+    fontSize: 12,
+  },
+
+  selectInput: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#dfe1e7",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    backgroundColor: "#fbfbfc",
+  },
+
+  selectText: {
+    color: "#17202b",
+    fontSize: 16,
+  },
+
+  placeholderText: {
+    color: "#8a8f9b",
+    fontSize: 16,
+  },
+
+  chevron: {
+    color: "#69707d",
+    fontSize: 20,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "rgba(18, 25, 35, 0.45)",
+  },
+
+  categorySheet: {
+    maxHeight: "75%",
+    padding: 18,
+    borderRadius: 18,
+    backgroundColor: "#ffffff",
+  },
+
+  sheetTitle: {
+    color: "#17202b",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+
+  categoryOptions: {
+    maxHeight: 260,
+  },
+
+  categoryOption: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eef0f3",
+  },
+
+  categoryOptionText: {
+    color: "#27313d",
+    fontSize: 15,
+  },
+
+  checkmark: {
+    color: "#2d7a59",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+
+  newCategoryButton: {
+    marginTop: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#17202b",
+    alignItems: "center",
+  },
+
+  newCategoryText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   notesInput: {
@@ -193,24 +378,26 @@ const styles = StyleSheet.create({
 
   actions: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     marginTop: 20,
     gap: 10,
   },
 
   cancelButton: {
-    paddingHorizontal: 20,
+    flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#cccccc",
+    borderColor: "#dfe1e7",
+    alignItems: "center",
   },
 
   saveButton: {
-    paddingHorizontal: 24,
+    flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: "#111111",
+    borderRadius: 10,
+    backgroundColor: "#17202b",
+    alignItems: "center",
   },
 
   saveText: {

@@ -1,8 +1,8 @@
 import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
 } from "react-native";
 
 type Props = {
@@ -20,6 +20,7 @@ export default function CategoryFilter({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scrollView}
       contentContainerStyle={styles.container}
     >
       {categories.map((category) => {
@@ -51,17 +52,24 @@ export default function CategoryFilter({
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flexGrow: 0,
+    height: 52,
+  },
+
   container: {
-    paddingVertical: 10,
+    alignItems: "center",
+    paddingVertical: 6,
     gap: 8,
   },
 
   button: {
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#cccccc",
+    borderColor: "#d7d9df",
+    backgroundColor: "#ffffff",
   },
 
   selectedButton: {

@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "RankEverything",
-    "slug": "RankEverything",
+    "slug": "samnaveen",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.samnaveen27steam.samnaveen"
     },
     "web": {
       "output": "static",
@@ -37,6 +38,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6ce28df6-05db-4ad0-b9d2-0783fb662f7d"
+      }
+    },
+    "owner": "samnaveen27s-team"
   }
 }

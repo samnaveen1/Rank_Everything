@@ -54,13 +54,13 @@ export default function CategoryFilter({
 const styles = StyleSheet.create({
   scrollView: {
     flexGrow: 0,
-    height: 52,
+    height: 56,
   },
 
   container: {
     alignItems: "center",
-    paddingVertical: 6,
-    gap: 8,
+    paddingVertical: 8,
+    gap: 10,
   },
 
   verticalContainer: {

@@ -254,8 +254,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: "#e1e3e8",
-    boxShadow: "0px 4px 12px rgba(28, 36, 48, 0.06)",
-    elevation: 3,
+    elevation: 4,
   },
 
   title: {

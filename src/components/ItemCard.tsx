@@ -25,36 +25,37 @@ export default function ItemCard({
 }: Props) {
   return (
     <View style={[styles.card, grid && styles.gridCard]}>
-      <View style={styles.rankContainer}>
-        <Text style={styles.rank}>#{rank}</Text>
+      <View style={styles.topRow}>
+        <View style={styles.rankBadge}>
+          <Text style={styles.rankText}>#{rank}</Text>
+        </View>
+
+        <View style={styles.nameRating}>
+          <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+          <View style={styles.ratingBadge}>
+            <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
+            <Text style={styles.star}>★</Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.content}>
-        <Text style={styles.name}>{item.name}</Text>
-
+      <View style={styles.metaRow}>
         <View style={styles.categoryBadge}>
           <Text style={styles.category}>{item.category}</Text>
         </View>
-
-        {item.notes ? (
-          <Text style={styles.notes}>
-            {item.notes}
-          </Text>
-        ) : null}
-
-        {item.mapLink ? (
-          <Pressable onPress={() => Linking.openURL(item.mapLink ?? "")} style={styles.mapButton}>
-            <Text style={styles.mapText}>⌖ Open map</Text>
-          </Pressable>
-        ) : null}
       </View>
 
-      <View style={styles.rightSection}>
-        <View style={styles.ratingBadge}>
-          <Text style={styles.rating}>{item.rating.toFixed(1)}</Text>
-          <Text style={styles.star}>★</Text>
-        </View>
+      {item.notes ? (
+        <Text style={styles.notes} numberOfLines={2}>{item.notes}</Text>
+      ) : null}
 
+      {item.mapLink ? (
+        <Pressable onPress={() => Linking.openURL(item.mapLink ?? "")} style={styles.mapButton}>
+          <Text style={styles.mapText}>⌖ Open map</Text>
+        </Pressable>
+      ) : null}
+
+      <View style={styles.actions}>
         <Pressable
           onPress={() => onEdit(item)}
           style={styles.editButton}
@@ -66,9 +67,7 @@ export default function ItemCard({
           onPress={() => onDelete(item.id)}
           style={styles.deleteButton}
         >
-          <Text style={styles.deleteText}>
-            Delete
-          </Text>
+          <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
       </View>
     </View>
@@ -77,15 +76,13 @@ export default function ItemCard({
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
-    padding: 14,
-    marginBottom: 10,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: "#e1e3e8",
-    borderRadius: 14,
+    borderRadius: 16,
     backgroundColor: "#ffffff",
-    boxShadow: "0px 3px 8px rgba(28, 36, 48, 0.05)",
-    elevation: 2,
+    elevation: 3,
   },
 
   gridCard: {
@@ -93,71 +90,47 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
 
-  rankContainer: {
-    justifyContent: "center",
-    width: 38,
-    marginRight: 10,
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
   },
 
-  rank: {
-    fontSize: 16,
+  rankBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: "#f0f2f5",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  rankText: {
+    fontSize: 14,
     fontWeight: "bold",
     color: "#69707d",
   },
 
-  content: {
+  nameRating: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   name: {
+    flex: 1,
     fontSize: 17,
     fontWeight: "bold",
     color: "#171a21",
-  },
-
-  category: {
-    fontSize: 12,
-    color: "#596170",
-  },
-
-  categoryBadge: {
-    alignSelf: "flex-start",
-    marginTop: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: "#f0f2f5",
-  },
-
-  notes: {
-    marginTop: 8,
-    fontSize: 13,
-    lineHeight: 18,
-    color: "#69707d",
-  },
-
-  mapButton: {
-    alignSelf: "flex-start",
-    marginTop: 7,
-    paddingVertical: 2,
-  },
-
-  mapText: {
-    color: "#1e6b70",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  rightSection: {
-    alignItems: "flex-end",
-    justifyContent: "flex-start",
-    marginLeft: 10,
+    marginRight: 10,
   },
 
   ratingBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
     backgroundColor: "#fff7d6",
@@ -175,23 +148,81 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  deleteButton: {
-    marginTop: 8,
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+
+  categoryBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#e8f4f5",
+  },
+
+  category: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#1e6b70",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
+  notes: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#69707d",
+    marginBottom: 8,
+  },
+
+  mapButton: {
+    alignSelf: "flex-start",
+    marginBottom: 10,
+    paddingVertical: 2,
+  },
+
+  mapText: {
+    color: "#1e6b70",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f2f5",
   },
 
   editButton: {
-    marginTop: 12,
-    paddingVertical: 2,
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#dfe1e7",
+    alignItems: "center",
   },
 
   editText: {
     color: "#4d647c",
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
+  },
+
+  deleteButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#fdf0f0",
+    alignItems: "center",
   },
 
   deleteText: {
     color: "#c75050",
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

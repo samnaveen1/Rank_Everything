@@ -16,6 +16,7 @@ const validateInput = (body: unknown): RankingInput => {
   const name = typeof input.name === "string" ? input.name.trim() : "";
   const category = typeof input.category === "string" ? input.category.trim() : "";
   const notes = typeof input.notes === "string" ? input.notes : "";
+  const mapLink = typeof input.mapLink === "string" ? input.mapLink.trim() : "";
 
   if (!name || !category) {
     throw new Error("Name and category are required.");
@@ -29,7 +30,7 @@ const validateInput = (body: unknown): RankingInput => {
     throw new Error("Rating must be between 0 and 10.");
   }
 
-  return { name, category, rating: input.rating, notes };
+  return { name, category, rating: input.rating, mapLink, notes };
 };
 
 export const registerRankingRoutes = async (app: FastifyInstance): Promise<void> => {

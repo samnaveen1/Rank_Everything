@@ -35,7 +35,8 @@ export const searchItems = (
     return (
       item.name.toLowerCase().includes(query) ||
       item.category.toLowerCase().includes(query) ||
-      item.notes.toLowerCase().includes(query)
+      item.notes.toLowerCase().includes(query) ||
+      item.mapLink?.toLowerCase().includes(query)
     );
   });
 };

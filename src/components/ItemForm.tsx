@@ -16,6 +16,7 @@ type Props = {
     name: string,
     category: string,
     rating: number,
+    mapLink: string,
     notes: string
   ) => void;
 
@@ -25,6 +26,7 @@ type Props = {
     name: string;
     category: string;
     rating: number;
+    mapLink?: string;
     notes: string;
   };
 };
@@ -40,6 +42,7 @@ export default function ItemForm({
   const [rating, setRating] = useState(
     initialItem ? String(initialItem.rating) : ""
   );
+  const [mapLink, setMapLink] = useState(initialItem?.mapLink ?? "");
   const [notes, setNotes] = useState(initialItem?.notes ?? "");
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [creatingCategory, setCreatingCategory] = useState(false);
@@ -48,6 +51,7 @@ export default function ItemForm({
     setName(initialItem?.name ?? "");
     setCategory(initialItem?.category ?? "");
     setRating(initialItem ? String(initialItem.rating) : "");
+    setMapLink(initialItem?.mapLink ?? "");
     setNotes(initialItem?.notes ?? "");
   }, [initialItem]);
 
@@ -82,6 +86,7 @@ export default function ItemForm({
       name.trim(),
       category.trim(),
       numericRating,
+      mapLink.trim(),
       notes.trim()
     );
   };
@@ -190,6 +195,19 @@ export default function ItemForm({
         onChangeText={setRating}
         placeholder="Example: 9.5"
         keyboardType="decimal-pad"
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>
+        Map link
+      </Text>
+
+      <TextInput
+        value={mapLink}
+        onChangeText={setMapLink}
+        placeholder="Paste a Google Maps link (optional)"
+        autoCapitalize="none"
+        keyboardType="url"
         style={styles.input}
       />
 

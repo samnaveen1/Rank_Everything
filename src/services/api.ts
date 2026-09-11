@@ -1,4 +1,5 @@
 import { RankingItem } from "../types/item";
+import { Todo, TodoInput } from "../types/todo";
 
 const configuredApiUrl = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4000").replace(/\/$/, "");
 
@@ -30,7 +31,7 @@ const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
       headers: {
-        "Content-Type": "application/json",
+        ...(options?.body ? { "Content-Type": "application/json" } : {}),
         ...(options?.headers ?? {}),
       },
     });
@@ -85,3 +86,14 @@ export const getAiSuggestions = (input: {
     method: "POST",
     body: JSON.stringify(input),
   });
+
+export const loadTodos = (): Promise<Todo[]> => request<Todo[]>("/api/todos");
+
+export const createTodo = (input: TodoInput): Promise<Todo> =>
+  request<Todo>("/api/todos", { method: "POST", body: JSON.stringify(input) });
+
+export const updateTodo = (id: string, input: Partial<TodoInput> & { completed?: boolean }): Promise<Todo> =>
+  request<Todo>(`/api/todos/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
+
+export const deleteTodo = (id: string): Promise<void> =>
+  request<void>(`/api/todos/${encodeURIComponent(id)}`, { method: "DELETE" });

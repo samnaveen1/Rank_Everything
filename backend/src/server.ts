@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { closeDatabase } from "./db/mongodb.js";
 import { registerAiRoutes } from "./modules/ai/routes.js";
 import { registerRankingRoutes } from "./modules/rankings/routes.js";
+import { registerTodoRoutes } from "./modules/todos/routes.js";
 
 const app = Fastify({ logger: true });
 
@@ -14,6 +15,7 @@ await app.register(cors, {
 
 app.get("/health", async () => ({ status: "ok" }));
 await registerRankingRoutes(app);
+await registerTodoRoutes(app);
 await registerAiRoutes(app);
 
 const shutdown = async () => {

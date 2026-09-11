@@ -1,4 +1,5 @@
 import {
+    Linking,
     Pressable,
     StyleSheet,
     Text,
@@ -12,6 +13,7 @@ type Props = {
   rank: number;
   onDelete: (id: string) => void;
   onEdit: (item: RankingItem) => void;
+  grid?: boolean;
 };
 
 export default function ItemCard({
@@ -19,9 +21,10 @@ export default function ItemCard({
   rank,
   onDelete,
   onEdit,
+  grid = false,
 }: Props) {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, grid && styles.gridCard]}>
       <View style={styles.rankContainer}>
         <Text style={styles.rank}>#{rank}</Text>
       </View>
@@ -37,6 +40,12 @@ export default function ItemCard({
           <Text style={styles.notes}>
             {item.notes}
           </Text>
+        ) : null}
+
+        {item.mapLink ? (
+          <Pressable onPress={() => Linking.openURL(item.mapLink ?? "")} style={styles.mapButton}>
+            <Text style={styles.mapText}>⌖ Open map</Text>
+          </Pressable>
         ) : null}
       </View>
 
@@ -77,6 +86,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
     boxShadow: "0px 3px 8px rgba(28, 36, 48, 0.05)",
     elevation: 2,
+  },
+
+  gridCard: {
+    flex: 1,
+    marginHorizontal: 5,
   },
 
   rankContainer: {
@@ -120,6 +134,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     color: "#69707d",
+  },
+
+  mapButton: {
+    alignSelf: "flex-start",
+    marginTop: 7,
+    paddingVertical: 2,
+  },
+
+  mapText: {
+    color: "#1e6b70",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   rightSection: {

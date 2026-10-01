@@ -58,9 +58,11 @@ export const loadSessionState = async (): Promise<SessionRecord | null> => {
     const parsed = JSON.parse(stored) as Partial<SessionRecord>;
     const handle = parsed.handle ? normalizeHandle(parsed.handle) : null;
     activeToken = typeof parsed.token === 'string' && parsed.token.length > 0 ? parsed.token : null;
-    emit(handle || null);
+    emit(handle && activeToken ? handle : null);
 
-    return handle ? { handle, token: activeToken, email: parsed.email ?? null, name: parsed.name ?? null } : null;
+    return handle && activeToken
+      ? { handle, token: activeToken, email: parsed.email ?? null, name: parsed.name ?? null }
+      : null;
   } catch (error) {
     console.warn('Could not read the saved session', error);
     activeToken = null;
@@ -83,6 +85,10 @@ export const signInAs = async (
 
   if (!handle) {
     throw new Error('Pick a username to continue.');
+  }
+
+  if (!rawToken) {
+    throw new Error('Authentication could not be established.');
   }
 
   const session: SessionRecord = { handle, token: rawToken ?? null };

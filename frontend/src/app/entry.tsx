@@ -1,33 +1,35 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  createRanking,
-  loadCategories,
-  loadRanking,
-  loadTags,
-  updateRanking,
-} from '@/services/api';
+    CategoryPicker,
+    FormError,
+    PosterUpload,
+    StarRatingInput,
+    TagSelector,
+    TextField,
+} from '@/components/ui/forms';
+import { Button, IconButton, Label, LoadingState } from '@/components/ui/kit';
 import { Spacing } from '@/constants/theme';
+import { useSession } from '@/hooks/use-session';
 import { useTheme } from '@/hooks/use-theme';
+import {
+    createRanking,
+    loadCategories,
+    loadRanking,
+    loadTags,
+    updateRanking,
+} from '@/services/api';
 import { RankingInput } from '@/types/item';
 import { titleCase } from '@/utils/format';
-import { Button, IconButton, Label, LoadingState } from '@/components/ui/kit';
-import {
-  CategoryPicker,
-  FormError,
-  PosterUpload,
-  StarRatingInput,
-  TagSelector,
-  TextField,
-} from '@/components/ui/forms';
 
 const SUGGESTED_TAGS = [
   'Action',
@@ -74,6 +76,7 @@ export default function EntryScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const palette = useTheme();
+  const session = useSession();
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const isEditing = typeof id === 'string' && id.length > 0;
@@ -84,6 +87,12 @@ export default function EntryScreen() {
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (session.ready && !session.handle) {
+      router.replace('/login');
+    }
+  }, [router, session.handle, session.ready]);
 
   const patch = useCallback((next: Partial<FormState>) => {
     setForm((current) => ({ ...current, ...next }));
@@ -204,6 +213,14 @@ export default function EntryScreen() {
     () => [...new Set([...categories, form.category].filter(Boolean))],
     [categories, form.category],
   );
+
+  if (!session.ready || !session.handle) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>
+        <LoadingState label="Checking your session..." />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>

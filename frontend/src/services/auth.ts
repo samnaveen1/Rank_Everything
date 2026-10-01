@@ -34,14 +34,20 @@ export type AuthResponse = {
 
 const request = async <T>(path: string, body?: Record<string, string | boolean | undefined>): Promise<T> => {
   const token = getSessionToken();
-  const response = await fetch(`${API_URL}${path}`, {
-    method: body ? 'POST' : 'GET',
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch {
+    throw new Error('Unable to connect. Please try again.');
+  }
 
   const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
 
@@ -74,12 +80,20 @@ export const loadCurrentAuthUser = (): Promise<AuthUser> => request<AuthUser>('/
 
 export const logoutAccount = async (): Promise<void> => {
   const token = getSessionToken();
-  const response = await fetch(`${API_URL}/api/auth/logout`, {
-    method: 'POST',
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}/api/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({}),
+    });
+  } catch {
+    throw new Error('Unable to connect. Please try again.');
+  }
 
   if (!response.ok) {
     const data = (await response.json().catch(() => null)) as { message?: string } | null;

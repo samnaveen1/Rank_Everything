@@ -1,0 +1,83 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  brandWordmark: {
+    fontSize: 28,
+    lineHeight: 32,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  brandWordmarkCompact: {
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  rankWord: {
+    color: '#101B3A',
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  ioWord: {
+    color: '#2864F0',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    opacity: 0.9,
+  },
+  markShell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(40,100,240,0.12)',
+    shadowColor: '#2864F0',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  markCard: {
+    position: 'absolute',
+    width: '62%',
+    height: '42%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(40,100,240,0.18)',
+    backgroundColor: '#F4F8FF',
+  },
+  markCardOne: {
+    left: 12,
+    top: 18,
+    transform: [{ rotate: '-9deg' }],
+  },
+  markCardTwo: {
+    left: 22,
+    top: 24,
+    backgroundColor: '#EAF1FF',
+  },
+  markCardThree: {
+    left: 32,
+    top: 30,
+    backgroundColor: '#DCE8FF',
+    transform: [{ rotate: '8deg' }],
+  },
+  markBar: {
+    position: 'absolute',
+    width: '28%',
+    height: 4,
+    backgroundColor: '#2864F0',
+    borderRadius: 4,
+    left: 40,
+    bottom: 20,
+  },
+  markArrow: {
+    position: 'absolute',
+    right: 18,
+    bottom: 18,
+    width: 18,
+    height: 18,
+    borderLeftWidth: 2,
+    borderTopWidth: 2,
+    borderColor: '#2864F0',
+    transform: [{ rotate: '45deg' }],
+  },
+});

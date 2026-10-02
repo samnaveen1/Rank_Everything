@@ -1,4 +1,3 @@
-import { getSessionHandle, getSessionToken } from '@/services/session';
 import {
     ActivityItem,
     ActivityPage,
@@ -12,79 +11,12 @@ import {
 } from '@/types/item';
 import { ProfileGroup, UserProfile, UserStats } from '@/types/user';
 
-const configuredApiUrl = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:4000').replace(
-  /\/$/,
-  '',
-);
+import { ApiRequestError, httpRequest } from '@/services/http';
 
-const API_URL = (() => {
-  if (typeof window === 'undefined') {
-    return configuredApiUrl;
-  }
-
-  const apiUrl = new URL(configuredApiUrl);
-  const isLocalApi = apiUrl.hostname === 'localhost' || apiUrl.hostname === '127.0.0.1';
-
-  if (isLocalApi && window.location.hostname) {
-    apiUrl.hostname = window.location.hostname;
-  }
-
-  return apiUrl.toString().replace(/\/$/, '');
-})();
-
-type ApiError = {
-  message?: string;
-};
-
-class ApiRequestError extends Error {
-  readonly status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = 'ApiRequestError';
-    this.status = status;
-  }
-}
+export { ApiRequestError };
 
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
-  let response: Response;
-
-  // Identifies the acting user server-side. Without it the API falls back to
-  // its configured default handle, which keeps logged-out states working.
-  const sessionHeader = getSessionHandle();
-  const bearerToken = getSessionToken();
-
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        ...(options?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...(sessionHeader ? { 'X-User-Handle': sessionHeader } : {}),
-        ...(bearerToken ? { Authorization: `Bearer ${bearerToken}` } : {}),
-        ...(options?.headers ?? {}),
-      },
-    });
-  } catch (error) {
-    console.error('RANK.io API request failed', {
-      url: `${API_URL}${path}`,
-      message: error instanceof Error ? error.message : String(error),
-    });
-    throw new Error(`Cannot connect to the API at ${API_URL}. Start the backend and try again.`);
-  }
-
-  if (!response.ok) {
-    const errorBody = (await response.json().catch(() => null)) as ApiError | null;
-    throw new ApiRequestError(
-      errorBody?.message ?? `Request failed with status ${response.status}.`,
-      response.status,
-    );
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
+  return httpRequest<T>(path, options);
 };
 
 const toQuery = (params: Record<string, string | number | undefined>): string => {
@@ -137,6 +69,17 @@ export const loadTags = (): Promise<string[]> => request<string[]>('/api/tags');
 /* Profile ---------------------------------------------------------------- */
 
 export const loadCurrentUser = (): Promise<UserProfile> => request<UserProfile>('/api/users/me');
+
+export const updateCurrentUser = (input: {
+  name: string;
+  bio: string;
+  avatarUrl: string;
+  backgroundImageUrl: string;
+  themePreference: 'light' | 'dark';
+}): Promise<UserProfile> => request<UserProfile>('/api/users/me', {
+  method: 'PATCH',
+  body: JSON.stringify(input),
+});
 
 export const loadUser = (handle: string): Promise<UserProfile> =>
   request<UserProfile>(`/api/users/${encodeURIComponent(handle)}`);
@@ -202,5 +145,3 @@ export const commentOnActivity = (id: string, body: string): Promise<ActivityIte
     method: 'POST',
     body: JSON.stringify({ body }),
   });
-
-export { ApiRequestError };

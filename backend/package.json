@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "seed": "tsx src/seed/seed.ts",
+    "seed:demo": "tsx src/seed/seed-demo.ts",
     "build:local": "tsc -p tsconfig.json",
     "build:vercel": "tsc -p tsconfig.vercel.json",
     "start": "node dist/server.js"

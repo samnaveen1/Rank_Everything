@@ -3,6 +3,8 @@ export type UserDocument = {
   name: string;
   bio: string;
   avatarUrl: string;
+  backgroundImageUrl?: string;
+  themePreference?: "light" | "dark";
   followerCount: number;
   followingCount: number;
   /** Handles this user follows. Used to compute follow state without an auth layer. */
@@ -25,6 +27,8 @@ export type UserProfile = UserHandle & {
   followerCount: number;
   followingCount: number;
   isCurrentUser: boolean;
+  backgroundImageUrl: string;
+  themePreference: "light" | "dark";
 };
 
 export type UserStats = {
@@ -38,6 +42,8 @@ export const toUserProfile = (document: UserDocument, isCurrentUser: boolean): U
   handle: document.handle,
   name: document.name,
   avatarUrl: document.avatarUrl,
+  backgroundImageUrl: document.backgroundImageUrl ?? "",
+  themePreference: document.themePreference ?? "light",
   bio: document.bio,
   followerCount: document.followerCount,
   followingCount: document.followingCount,

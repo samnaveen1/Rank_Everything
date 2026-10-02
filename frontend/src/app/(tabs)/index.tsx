@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -24,7 +23,15 @@ import {
 import { ConfirmDialog, ItemCard, PaginationBar } from '@/components/ui/ranking';
 import { RatingBreakdownSheet } from '@/components/ui/RatingBreakdownSheet';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { Layout, Radius, Spacing, Typography, makeShadows } from '@/constants/theme';
+import {
+  CardRadius,
+  Layout,
+  Radius,
+  ScreenPadding,
+  Spacing,
+  Typography,
+  makeShadows,
+} from '@/constants/theme';
 import { useRankings } from '@/hooks/use-rankings';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteRanking, loadCurrentUser } from '@/services/api';
@@ -37,7 +44,8 @@ export default function MyTopTenScreen() {
   const insets = useSafeAreaInsets();
   const shadows = useMemo(() => makeShadows(palette), [palette]);
 
-  const [handle, setHandle] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [authorHandle, setAuthorHandle] = useState<string | null>(null);
   const [category, setCategory] = useState('All');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -47,7 +55,7 @@ export default function MyTopTenScreen() {
   const [breakdownId, setBreakdownId] = useState<string | null>(null);
 
   const rankings = useRankings({
-    author: handle ?? undefined,
+    author: authorHandle ?? undefined,
     category,
     query: searchText,
     sort,
@@ -61,7 +69,8 @@ export default function MyTopTenScreen() {
       loadCurrentUser()
         .then((user) => {
           if (!cancelled) {
-            setHandle(user.handle);
+            setDisplayName(user.name);
+            setAuthorHandle(user.handle);
           }
         })
         .catch((error) => console.error(error));
@@ -108,51 +117,51 @@ export default function MyTopTenScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top']}>
       <ScreenHeader
         title="RANK.io"
-        subtitle={handle ? `@${handle}'s personal board` : 'Loading your board…'}
+        subtitle={displayName ? 'Your personal board' : 'Loading your board…'}
         onPressSearch={() => setSearchOpen((value) => !value)}
         searchActive={searchOpen || searchText.length > 0}
       />
 
-      {/* Hero strip: makes the flagship board feel like the centerpiece. */}
-      <LinearGradient
-        colors={[palette.primary, palette.primaryPressed]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}>
-        <View style={styles.heroStat}>
-          <Label variant="display" style={{ color: palette.onPrimary }}>
+      <View
+        style={[
+          styles.summaryCard,
+          { backgroundColor: palette.surface, borderColor: palette.border },
+          shadows.card,
+        ]}>
+        <View style={styles.summaryStat}>
+          <Label variant="title" style={{ color: palette.primary }}>
             {rankings.total}
           </Label>
-          <Label variant="overline" style={styles.heroStatLabel}>
+          <Label variant="overline" style={{ color: palette.textSecondary }}>
             {rankings.total === 1 ? 'RANKING' : 'RANKINGS'}
           </Label>
         </View>
 
-        <View style={styles.heroDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: palette.border }]} />
 
-        <View style={styles.heroStat}>
-          <View style={styles.heroScoreRow}>
-            <MaterialCommunityIcons name="star" size={18} color={palette.star} />
-            <Label variant="display" style={{ color: palette.onPrimary }}>
+        <View style={styles.summaryStat}>
+          <View style={styles.summaryScoreRow}>
+            <MaterialCommunityIcons name="star" size={16} color={palette.star} />
+            <Label variant="title" style={{ color: palette.text }}>
               {average !== null ? average.toFixed(1) : '—'}
             </Label>
           </View>
-          <Label variant="overline" style={styles.heroStatLabel}>
+          <Label variant="overline" style={{ color: palette.textSecondary }}>
             AVG SCORE
           </Label>
         </View>
 
-        <View style={styles.heroDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: palette.border }]} />
 
-        <View style={styles.heroStat}>
-          <Label variant="display" style={{ color: palette.onPrimary }}>
+        <View style={styles.summaryStat}>
+          <Label variant="title" style={{ color: palette.text }}>
             {rankings.categories.length}
           </Label>
-          <Label variant="overline" style={styles.heroStatLabel}>
+          <Label variant="overline" style={{ color: palette.textSecondary }}>
             CATEGORIES
           </Label>
         </View>
-      </LinearGradient>
+      </View>
 
       {searchOpen ? (
         <View style={styles.searchWrap}>
@@ -244,9 +253,9 @@ export default function MyTopTenScreen() {
               message={
                 searchText
                   ? 'Try a different search, or clear the category filter.'
-                  : 'Add your first ranking and it will show up at the top of your board.'
+                  : 'Rank movies, games, restaurants, books, travel, and more to build your taste profile.'
               }
-              actionLabel={searchText ? undefined : '＋ Add ranking'}
+              actionLabel={searchText ? undefined : '+ Add ranking'}
               onAction={searchText ? undefined : () => openEntry()}
             />
           }
@@ -267,7 +276,9 @@ export default function MyTopTenScreen() {
         />
       )}
 
-      <Fab label="Add ranking" bottomInset={insets.bottom + Spacing.lg} onPress={() => openEntry()} />
+      {rankings.items.length > 0 ? (
+        <Fab label="Add ranking" bottomInset={insets.bottom + Spacing.lg} onPress={() => openEntry()} />
+      ) : null}
 
       <ConfirmDialog
         visible={pendingDelete !== null}
@@ -285,20 +296,20 @@ export default function MyTopTenScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  hero: {
+  summaryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.lg,
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
+    marginHorizontal: ScreenPadding,
+    marginTop: Spacing.sm,
+    borderRadius: CardRadius,
+    borderWidth: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
   },
-  heroStat: { flex: 1, alignItems: 'center', gap: 2 },
-  heroScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  heroStatLabel: { color: '#FFFFFF', opacity: 0.82 },
-  heroDivider: { width: 1, height: 34, backgroundColor: 'rgba(255,255,255,0.28)' },
+  summaryStat: { flex: 1, alignItems: 'center', gap: 2 },
+  summaryScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  summaryDivider: { width: 1, height: 30 },
   skeletonWrap: { paddingTop: Spacing.md },
   searchWrap: {
     paddingHorizontal: Spacing.lg,

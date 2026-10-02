@@ -267,8 +267,21 @@ export const googleSignIn = async (accessToken: unknown): Promise<AuthResult> =>
       joinedAt: new Date().toISOString(),
     };
 
-    await users.insertOne(newUser as any);
-    user = newUser;
+    try {
+      await users.insertOne(newUser as any);
+      user = newUser;
+    } catch (error) {
+      if (isDuplicateKeyError(error)) {
+        user = await users.findOne({ email });
+        if (!user) {
+          throw new AuthError(409, "Account exists with different sign-in method.");
+        }
+      } else {
+        throw error;
+      }
+    }
+  } else if (user.provider !== "google") {
+    throw new AuthError(409, "Account exists with different sign-in method. Try email/password.");
   }
 
   return createAuthResult(user.handle);

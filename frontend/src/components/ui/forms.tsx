@@ -6,8 +6,10 @@ import type { GestureResponderEvent } from 'react-native';
 import {
     Platform,
     Pressable,
+    ScrollView,
     StyleProp,
     StyleSheet,
+    Modal,
     TextInput,
     TextInputProps,
     View,
@@ -17,7 +19,7 @@ import {
 import { CardRadius, Radius, Spacing, Typography, makeShadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { titleCase } from '@/utils/format';
-import { Chip, IconButton, Label } from './kit';
+import { Button, Chip, IconButton, Label } from './kit';
 
 /** Spreads into a StyleSheet entry to pin an element to its parent. */
 const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as const;
@@ -179,10 +181,17 @@ export function TagSelector({
 }: TagSelectorProps) {
   const palette = useTheme();
   const [draft, setDraft] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const normalizedOptions = useMemo(
     () => options.map(titleCase).filter((option) => !selected.includes(option)),
     [options, selected],
+  );
+
+  const filteredOptions = useMemo(
+    () => normalizedOptions.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase())),
+    [normalizedOptions, query],
   );
 
   const toggle = useCallback(
@@ -221,9 +230,10 @@ export function TagSelector({
         {selected.map((tag) => (
           <Chip key={tag} label={`${tag}  ×`} selected onPress={() => toggle(tag)} />
         ))}
-        {normalizedOptions.map((option) => (
+        {normalizedOptions.slice(0, 3).map((option) => (
           <Chip key={option} label={option} onPress={() => toggle(option)} />
         ))}
+        <Chip label="+ Add tags" onPress={() => setPickerOpen(true)} />
       </View>
 
       {allowCustom ? (
@@ -247,6 +257,42 @@ export function TagSelector({
           ) : null}
         </View>
       ) : null}
+
+      <Modal visible={pickerOpen} animationType="slide" transparent onRequestClose={() => setPickerOpen(false)}>
+        <View style={[styles.tagModalBackdrop, { backgroundColor: palette.overlay }]}>
+          <View style={[styles.tagModal, { backgroundColor: palette.background }]}>
+            <View style={styles.tagModalHeader}>
+              <View>
+                <Label variant="title">Add tags</Label>
+                <Label variant="caption" tone="secondary">Choose up to {max} tags</Label>
+              </View>
+              <IconButton name="close" label="Close tag selector" onPress={() => setPickerOpen(false)} />
+            </View>
+            <View style={[styles.tagSearch, { backgroundColor: palette.surface, borderColor: palette.border }]}>
+              <MaterialCommunityIcons name="magnify" size={18} color={palette.textTertiary} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search tags"
+                placeholderTextColor={palette.textTertiary}
+                style={[styles.tagSearchInput, { color: palette.text }]}
+                autoCapitalize="words"
+              />
+            </View>
+            <ScrollView contentContainerStyle={styles.tagModalList} keyboardShouldPersistTaps="handled">
+              {filteredOptions.map((option) => (
+                <Chip
+                  key={option}
+                  label={option}
+                  selected={selected.includes(option)}
+                  onPress={() => toggle(option)}
+                />
+              ))}
+            </ScrollView>
+            <Button title="Done" onPress={() => { setPickerOpen(false); setQuery(''); }} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -518,6 +564,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
   },
+  tagModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  tagModal: {
+    maxHeight: '82%',
+    padding: Spacing.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    gap: Spacing.md,
+  },
+  tagModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  tagSearch: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: CardRadius,
+    borderWidth: 1,
+  },
+  tagSearchInput: {
+    flex: 1,
+    ...Typography.body,
+  },
+  tagModalList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingBottom: Spacing.md,
+  },
   tagInput: {
     flex: 1,
     minHeight: 44,
@@ -568,7 +650,6 @@ const styles = StyleSheet.create({
   posterRemoveButton: {
     width: 26,
     height: 26,
-    backgroundColor: 'rgba(10,20,24,0.72)',
   },
   formError: {
     flexDirection: 'row',

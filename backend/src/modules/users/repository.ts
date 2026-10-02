@@ -28,6 +28,18 @@ export const findUser = async (handle: string): Promise<UserDocument | null> => 
 export const resolveUser = async (handle: string): Promise<UserDocument> =>
   (await findUser(handle)) ?? fallbackUser(handle);
 
+export const updateUserProfile = async (
+  handle: string,
+  patch: Partial<Pick<UserDocument, "name" | "bio" | "avatarUrl" | "backgroundImageUrl" | "themePreference">>,
+): Promise<UserDocument | null> => {
+  const updated = await (await collection()).findOneAndUpdate(
+    { handle },
+    { $set: patch },
+    { returnDocument: "after" },
+  );
+  return updated ? (updated as unknown as UserDocument) : null;
+};
+
 /** Ensures a user document exists, used when the current user creates content. */
 export const ensureUser = async (
   handle: string,

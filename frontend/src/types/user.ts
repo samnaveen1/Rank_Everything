@@ -2,6 +2,8 @@ export type UserHandle = {
   handle: string;
   name: string;
   avatarUrl: string;
+  backgroundImageUrl: string;
+  themePreference: 'light' | 'dark';
 };
 
 export type UserProfile = UserHandle & {

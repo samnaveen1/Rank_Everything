@@ -215,7 +215,7 @@ export function Card({ children, style, padded = true, onPress, accessibilityLab
     <View
       style={[
         styles.card,
-        { backgroundColor: palette.surface },
+        { backgroundColor: palette.surface, borderColor: palette.border },
         shadows.card,
         padded && styles.cardPadded,
         style,
@@ -676,6 +676,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: CardRadius,
+    borderWidth: 1,
   },
   cardPadded: {
     padding: Spacing.lg,

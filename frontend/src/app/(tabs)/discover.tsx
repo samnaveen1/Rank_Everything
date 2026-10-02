@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -8,13 +7,14 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar, Chip, EmptyState, ErrorState, Label, Poster, SkeletonList } from '@/components/ui/kit';
 import { ScreenHeader, SegmentedTabs } from '@/components/ui/ScreenHeader';
-import { Radius, Spacing, makeShadows } from '@/constants/theme';
+import { Radius, Spacing, Typography, makeShadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import {
   commentOnActivity,
@@ -27,6 +27,7 @@ import { ActivityItem, ActivityKind, LeaderboardEntry } from '@/types/community'
 import { formatRelativeTime } from '@/utils/format';
 
 type TabKey = 'Leaderboard' | 'Activity';
+type DiscoveryFilter = 'trending' | 'rating';
 
 const LEADERBOARD_TABS: readonly TabKey[] = ['Leaderboard', 'Activity'];
 
@@ -47,9 +48,9 @@ const TREND_ICON = { up: 'arrow-top-right', down: 'arrow-bottom-right', steady: 
 
 /** Podium colours keyed by 1-based rank. */
 const MEDAL = {
-  1: { bg: 'rgba(224,162,43,0.16)', border: 'rgba(224,162,43,0.45)', text: '#B57F14' },
-  2: { bg: 'rgba(150,160,165,0.16)', border: 'rgba(150,160,165,0.42)', text: '#6E7A80' },
-  3: { bg: 'rgba(184,120,70,0.16)', border: 'rgba(184,120,70,0.42)', text: '#96552F' },
+  1: { bg: '#FFF4D6', border: '#F5B82E', text: '#B57F14' },
+  2: { bg: '#F5F7FA', border: '#DDE4F0', text: '#68748D' },
+  3: { bg: '#F2E6DC', border: '#D8A87A', text: '#96552F' },
 } as const;
 
 export default function DiscoverScreen() {
@@ -58,6 +59,8 @@ export default function DiscoverScreen() {
 
   const [tab, setTab] = useState<TabKey>('Leaderboard');
   const [filter, setFilter] = useState<ActivityKind | 'all'>('all');
+  const [leaderboardFilter, setLeaderboardFilter] = useState<DiscoveryFilter>('trending');
+  const [searchText, setSearchText] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [feed, setFeed] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,13 +144,30 @@ export default function DiscoverScreen() {
     [feed, filter],
   );
 
-  const leader = leaderboard[0];
+  const visibleLeaderboard = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    const matches = leaderboard.filter((entry) =>
+      !query || [entry.title, entry.category, entry.author.name, entry.author.handle, ...entry.tags]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
+    );
+
+    return [...matches].sort((left, right) => {
+      if (leaderboardFilter === 'trending') {
+        const trendDelta = Number(right.trend === 'up') - Number(left.trend === 'up');
+        if (trendDelta !== 0) return trendDelta;
+      }
+      return right.consensusRating - left.consensusRating;
+    });
+  }, [leaderboard, leaderboardFilter, searchText]);
+  const leader = visibleLeaderboard[0];
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top']}>
       <ScreenHeader
         title="Discover"
-        subtitle="Community consensus and activity"
+        subtitle="Find what people are ranking"
         right={
           <Pressable
             accessibilityLabel="Refresh community data"
@@ -163,6 +183,24 @@ export default function DiscoverScreen() {
         }
       />
 
+      <View style={[styles.search, { backgroundColor: palette.surface, borderColor: palette.border }, shadows.card]}>
+        <MaterialCommunityIcons name="magnify" size={18} color={palette.textTertiary} />
+        <TextInput
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder="Search rankings, people, or categories"
+          placeholderTextColor={palette.textTertiary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={[styles.searchInput, { color: palette.text }]}
+        />
+        {searchText ? (
+          <Pressable accessibilityLabel="Clear discover search" onPress={() => setSearchText('')} hitSlop={8}>
+            <MaterialCommunityIcons name="close-circle" size={17} color={palette.textTertiary} />
+          </Pressable>
+        ) : null}
+      </View>
+
       <View style={styles.segmentWrap}>
         <SegmentedTabs options={LEADERBOARD_TABS} selected={tab} onSelect={(next) => setTab(next as TabKey)} />
       </View>
@@ -174,31 +212,38 @@ export default function DiscoverScreen() {
       ) : error ? (
         <ErrorState message={error} onRetry={refresh} />
       ) : tab === 'Leaderboard' ? (
+        <>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.discoveryFilters}>
+            {(['trending', 'rating'] as const).map((option) => (
+              <Chip
+                key={option}
+                label={option === 'trending' ? 'Trending' : 'Top rated'}
+                selected={leaderboardFilter === option}
+                onPress={() => setLeaderboardFilter(option)}
+              />
+            ))}
+          </ScrollView>
         <FlatList
-          data={leaderboard}
+          data={visibleLeaderboard}
           keyExtractor={(entry) => entry.rankingId}
-          contentContainerStyle={[styles.list, leaderboard.length === 0 && styles.listEmpty]}
+          contentContainerStyle={[styles.list, visibleLeaderboard.length === 0 && styles.listEmpty]}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.primary} />
           }
           ListHeaderComponent={
             leader ? (
-              /* Gradient champion card so the #1 pick leads the screen. */
-              <LinearGradient
-                colors={[palette.primary, palette.primaryPressed]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.podium}>
+              <View
+                style={[styles.podium, { backgroundColor: palette.surface, borderColor: palette.border }, shadows.card]}>
                 <View style={styles.podiumRow}>
                   <View style={styles.championAvatarRing}>
                     <Avatar name={leader.author.name} uri={leader.author.avatarUrl} size={46} showRing />
                   </View>
                   <View style={styles.flex}>
-                    <Label variant="overline" style={styles.podiumEyebrow}>
+                    <Label variant="overline" tone="primary" style={styles.podiumEyebrow}>
                       #1 COMMUNITY PICK
                     </Label>
-                    <Label variant="title" numberOfLines={1} style={{ color: palette.onPrimary }}>
+                    <Label variant="title" numberOfLines={1}>
                       {leader.title}
                     </Label>
                   </View>
@@ -208,26 +253,27 @@ export default function DiscoverScreen() {
                 <View style={styles.podiumMeta}>
                   <View style={styles.podiumScore}>
                     <MaterialCommunityIcons name="star" size={15} color={palette.star} />
-                    <Label variant="bodyStrong" style={{ color: palette.onPrimary }}>
+                    <Label variant="bodyStrong">
                       {leader.consensusRating.toFixed(1)}
                     </Label>
                   </View>
-                  <Label variant="caption" style={styles.podiumCaption} numberOfLines={1}>
+                  <Label variant="caption" tone="secondary" style={styles.podiumCaption} numberOfLines={1}>
                     {leader.ratingCount} ratings · by @{leader.author.handle}
                   </Label>
                 </View>
-              </LinearGradient>
+              </View>
             ) : null
           }
           renderItem={({ item }) => <LeaderboardRow entry={item} />}
           ListEmptyComponent={
             <EmptyState
               icon="podium-gold"
-              title="The leaderboard is empty"
-              message="Once people start ranking, the highest consensus scores land here."
+              title={searchText ? 'No rankings found' : 'The leaderboard is empty'}
+              message={searchText ? 'Try another search or clear the filter.' : 'Once people start ranking, the highest consensus scores land here.'}
             />
           }
         />
+        </>
       ) : (
         <View style={styles.flex}>
           <ScrollView
@@ -430,6 +476,23 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   skeletonWrap: { paddingTop: Spacing.md },
   segmentWrap: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
+  search: {
+    minHeight: 46,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  searchInput: { flex: 1, ...Typography.body },
+  discoveryFilters: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
   list: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.sm,
@@ -448,6 +511,7 @@ const styles = StyleSheet.create({
   podium: {
     padding: Spacing.lg,
     borderRadius: Radius.lg,
+    borderWidth: 1,
     gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
@@ -462,14 +526,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.5)',
     padding: 2,
   },
-  podiumEyebrow: { color: '#FFFFFF', opacity: 0.82 },
+  podiumEyebrow: { opacity: 0.9 },
   podiumMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
   podiumScore: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  podiumCaption: { color: '#FFFFFF', opacity: 0.85, flex: 1 },
+  podiumCaption: { flex: 1 },
   filterRow: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,

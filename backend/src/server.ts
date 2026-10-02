@@ -1,4 +1,6 @@
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import { env } from "./config/env.js";
 import { ensureIndexes } from "./db/indexes.js";
@@ -10,6 +12,17 @@ import { registerRankingRoutes } from "./modules/rankings/routes.js";
 import { registerUserRoutes } from "./modules/users/routes.js";
 
 const app = Fastify({ logger: true });
+
+await app.register(helmet, {
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+});
+
+await app.register(rateLimit, {
+  global: false,
+  max: 100,
+  timeWindow: "1 minute",
+});
 
 await app.register(cors, {
   origin: env.corsOrigins.includes("*") ? true : env.corsOrigins,

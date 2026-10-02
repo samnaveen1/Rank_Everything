@@ -1,6 +1,5 @@
 import { ReactNode, useMemo } from 'react';
 import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Spacing, makeShadows } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -29,9 +28,6 @@ export function ScreenHeader({
   return (
     <View style={[styles.header, style]}>
       <View style={styles.brand}>
-        <View style={[styles.logo, { backgroundColor: palette.primary }, shadows.bar]}>
-          <MaterialCommunityIcons name="star-four-points" size={16} color={palette.onPrimary} />
-        </View>
         <View style={styles.brandText}>
           <Label variant="title" numberOfLines={1}>
             {title}
@@ -120,13 +116,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     flexShrink: 1,
-  },
-  logo: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   brandText: { flexShrink: 1 },
   actions: {

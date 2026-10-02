@@ -249,6 +249,7 @@ export default function EntryScreen() {
             showsVerticalScrollIndicator={false}>
             {error ? <FormError message={error} /> : null}
 
+            <Label variant="heading">1. What are you ranking?</Label>
             <PosterUpload
               uris={form.posterUrls}
               onChange={(posterUrls) => patch({ posterUrls })}
@@ -263,12 +264,20 @@ export default function EntryScreen() {
               maxLength={120}
             />
 
+            <Label variant="heading">2. Category</Label>
             <CategoryPicker
               categories={categoryOptions}
               selected={form.category}
               onChange={(category) => patch({ category })}
             />
 
+            <Label variant="heading">3. Your rating</Label>
+            <StarRatingInput
+              value={form.rating}
+              onChange={(rating) => patch({ rating })}
+            />
+
+            <Label variant="heading">4. Tags</Label>
             <TagSelector
               label="Genres & tags"
               options={tagOptions}
@@ -276,11 +285,7 @@ export default function EntryScreen() {
               onChange={(tags) => patch({ tags })}
             />
 
-            <StarRatingInput
-              value={form.rating}
-              onChange={(rating) => patch({ rating })}
-            />
-
+            <Label variant="heading">5. Your thoughts</Label>
             <TextField
               label="Description"
               value={form.description}
@@ -297,8 +302,12 @@ export default function EntryScreen() {
               onPress={submit}
             />
 
-            <View style={[styles.tip, { backgroundColor: palette.surfaceMuted }]}>
-              <Label variant="caption" tone="tertiary">
+            <View
+              style={[
+                styles.tip,
+                { backgroundColor: palette.primarySoft, borderColor: palette.border },
+              ]}>
+              <Label variant="caption" style={{ color: palette.textSecondary }}>
                 Posters you attach are stored as image references. The first image becomes the cover used
                 across your board, the leaderboard, and your profile grid.
               </Label>

@@ -1,27 +1,32 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+// LinearGradient removed in light redesign
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
     FlatList,
+    KeyboardAvoidingView,
+    Modal,
     Pressable,
     RefreshControl,
     ScrollView,
     StyleSheet,
+    TextInput,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Avatar, EmptyState, ErrorState, Label, LoadingState, Poster } from '@/components/ui/kit';
+import { Avatar, Button, EmptyState, ErrorState, Label, LoadingState, Poster } from '@/components/ui/kit';
 import { RatingBreakdownSheet } from '@/components/ui/RatingBreakdownSheet';
 import { ScreenHeader, SegmentedTabs } from '@/components/ui/ScreenHeader';
-import { Radius, Spacing, makeShadows } from '@/constants/theme';
+import { Radius, ScreenPadding, Spacing, makeShadows } from '@/constants/theme';
 import { useSession } from '@/hooks/use-session';
-import { useTheme } from '@/hooks/use-theme';
+import { setThemeOverride, useTheme } from '@/hooks/use-theme';
 import {
     loadCurrentUser,
     loadUserRankings,
     loadUserStats,
+    updateCurrentUser,
     type ProfileRankingSummary,
 } from '@/services/api';
 import { logoutAccount } from '@/services/auth';
@@ -55,6 +60,7 @@ const bucketByCategory = (items: ProfileRankingSummary[]): Bucket[] => {
 export default function ProfileScreen() {
   const router = useRouter();
   const palette = useTheme();
+  const shadows = useMemo(() => makeShadows(palette), [palette]);
   const session = useSession();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -65,6 +71,16 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [breakdownId, setBreakdownId] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [editDraft, setEditDraft] = useState({
+    name: '',
+    bio: '',
+    avatarUrl: '',
+    backgroundImageUrl: '',
+    themePreference: 'light' as 'light' | 'dark',
+  });
 
   const load = useCallback(
     async (intent: 'focus' | 'manual', selectedGroup: ProfileGroup) => {
@@ -78,6 +94,7 @@ export default function ProfileScreen() {
           loadUserRankings('me', selectedGroup),
         ]);
         setProfile(user);
+        setThemeOverride(user.themePreference);
         setStats(userStats);
         setItems(rankings);
       } catch (loadError) {
@@ -118,54 +135,79 @@ export default function ProfileScreen() {
   const displayName = profile?.name?.trim() || session.handle || 'Your profile';
   const displayHandle = profile?.handle || session.handle || 'guest';
 
+  const openEditProfile = useCallback(() => {
+    if (!profile) return;
+    setEditDraft({
+      name: profile.name,
+      bio: profile.bio,
+      avatarUrl: profile.avatarUrl,
+      backgroundImageUrl: profile.backgroundImageUrl,
+      themePreference: profile.themePreference,
+    });
+    setProfileError('');
+    setEditOpen(true);
+  }, [profile]);
+
+  const pickImage = useCallback(async (field: 'avatarUrl' | 'backgroundImageUrl') => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: false,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]?.uri) {
+      setEditDraft((current) => ({ ...current, [field]: result.assets[0].uri }));
+    }
+  }, []);
+
+  const saveProfile = useCallback(async () => {
+    setSavingProfile(true);
+    setProfileError('');
+    try {
+      const updated = await updateCurrentUser(editDraft);
+      setProfile(updated);
+      setThemeOverride(updated.themePreference);
+      setEditOpen(false);
+    } catch (saveError) {
+      setProfileError(saveError instanceof Error ? saveError.message : 'Unable to update your profile.');
+    } finally {
+      setSavingProfile(false);
+    }
+  }, [editDraft]);
+
   const header = (
     <>
-      {/* Gradient hero so the profile reads as a distinct identity card. */}
-      <LinearGradient
-        colors={[palette.primary, palette.primaryPressed]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}>
+      <View
+        style={[
+          styles.profileCard,
+          { backgroundColor: palette.surface, borderColor: palette.border },
+          shadows.card,
+        ]}>
+        <View style={styles.cover}>
+          {profile?.backgroundImageUrl ? <Poster uri={profile.backgroundImageUrl} style={styles.coverImage} /> : null}
+          <View style={[styles.coverTint, { backgroundColor: palette.primarySoft }]} />
+        </View>
         <View style={styles.heroTop}>
           <View style={styles.heroAvatarRing}>
-            <Avatar
-              name={displayName}
-              uri={profile?.avatarUrl}
-              size={68}
-              showRing
-            />
+            <Avatar name={displayName} uri={profile?.avatarUrl} size={68} showRing />
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Sign out and switch user"
-            onPress={signOut}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.signOut,
-              { backgroundColor: 'rgba(255,255,255,0.16)', opacity: pressed ? 0.7 : 1 },
-            ]}>
-            <MaterialCommunityIcons name="logout-variant" size={15} color={palette.onPrimary} />
-            <Label variant="captionStrong" style={{ color: palette.onPrimary }}>
-              Logout
-            </Label>
-          </Pressable>
         </View>
 
         <View style={styles.heroText}>
-          <Label variant="title" numberOfLines={1} style={{ color: palette.onPrimary }}>
+          <Label variant="title" numberOfLines={1} style={{ color: palette.text }}>
             {displayName}
           </Label>
-          <Label variant="caption" numberOfLines={1} style={{ color: palette.onPrimary, opacity: 0.85 }}>
+          <Label variant="caption" numberOfLines={1} style={{ color: palette.textSecondary }}>
             @{displayHandle}
           </Label>
           {profile?.bio ? (
-            <Label variant="caption" numberOfLines={3} style={styles.heroBio}>
+            <Label variant="caption" numberOfLines={3} style={[styles.heroBio, { color: palette.textSecondary }]}>
               {profile.bio}
             </Label>
           ) : null}
+          <Button title="Edit profile" icon="pencil-outline" fullWidth={false} variant="secondary" onPress={openEditProfile} />
         </View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.statRow}>
         <StatCard value={stats?.rankingCount ?? 0} label="Rankings" />
@@ -191,7 +233,26 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top']}>
-      <ScreenHeader title="Profile" subtitle={session.handle ? `Signed in as @${session.handle}` : undefined} />
+      <ScreenHeader
+        title="Profile"
+        subtitle="Your RANK.io identity"
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Sign out and switch user"
+            onPress={signOut}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.signOut,
+              { backgroundColor: palette.primarySoft, opacity: pressed ? 0.7 : 1 },
+            ]}>
+            <MaterialCommunityIcons name="logout-variant" size={15} color={palette.primary} />
+            <Label variant="captionStrong" style={{ color: palette.primary }}>
+              Logout
+            </Label>
+          </Pressable>
+        }
+      />
 
       {loading ? (
         <LoadingState label="Loading your profile" />
@@ -238,6 +299,62 @@ export default function ProfileScreen() {
       )}
 
       <RatingBreakdownSheet rankingId={breakdownId} onClose={() => setBreakdownId(null)} />
+
+      <Modal visible={editOpen} animationType="slide" transparent onRequestClose={() => setEditOpen(false)}>
+        <KeyboardAvoidingView style={[styles.modalBackdrop, { backgroundColor: palette.overlay }]} behavior="padding">
+          <View style={[styles.editSheet, { backgroundColor: palette.background }]}>
+            <View style={styles.editHeader}>
+              <View>
+                <Label variant="title">Edit profile</Label>
+                <Label variant="caption" tone="secondary">Make your RANK.io identity yours.</Label>
+              </View>
+              <Pressable accessibilityLabel="Close edit profile" onPress={() => setEditOpen(false)} hitSlop={8}>
+                <MaterialCommunityIcons name="close" size={22} color={palette.text} />
+              </Pressable>
+            </View>
+
+            {profileError ? <Label variant="caption" tone="danger">{profileError}</Label> : null}
+
+            <ScrollView contentContainerStyle={styles.editContent} keyboardShouldPersistTaps="handled">
+              <View style={styles.imageActions}>
+                <Button title="Change avatar" icon="account-circle-outline" variant="secondary" onPress={() => void pickImage('avatarUrl')} />
+                <Button title="Change cover" icon="image-outline" variant="secondary" onPress={() => void pickImage('backgroundImageUrl')} />
+              </View>
+              <Label variant="overline" tone="secondary">Display name</Label>
+              <TextInput
+                value={editDraft.name}
+                onChangeText={(name) => setEditDraft((current) => ({ ...current, name }))}
+                placeholder="Your name"
+                placeholderTextColor={palette.textTertiary}
+                style={[styles.editInput, { backgroundColor: palette.surface, borderColor: palette.border, color: palette.text }]}
+              />
+              <Label variant="overline" tone="secondary">Bio</Label>
+              <TextInput
+                value={editDraft.bio}
+                onChangeText={(bio) => setEditDraft((current) => ({ ...current, bio }))}
+                placeholder="Tell people what you love ranking"
+                placeholderTextColor={palette.textTertiary}
+                multiline
+                style={[styles.editInput, styles.editBio, { backgroundColor: palette.surface, borderColor: palette.border, color: palette.text }]}
+              />
+              <Label variant="overline" tone="secondary">Theme</Label>
+              <View style={styles.themeRow}>
+                {(['light', 'dark'] as const).map((mode) => (
+                  <Pressable
+                    key={mode}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: editDraft.themePreference === mode }}
+                    onPress={() => setEditDraft((current) => ({ ...current, themePreference: mode }))}
+                    style={[styles.themeChoice, { backgroundColor: editDraft.themePreference === mode ? palette.primary : palette.surface, borderColor: palette.border }]}>
+                    <Label tone={editDraft.themePreference === mode ? 'inverse' : 'secondary'}>{mode === 'light' ? 'Light' : 'Dark'}</Label>
+                  </Pressable>
+                ))}
+              </View>
+              <Button title="Save profile" icon="content-save-outline" loading={savingProfile} onPress={() => void saveProfile()} />
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -345,12 +462,24 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xxxl },
   listHeader: { gap: Spacing.lg, paddingBottom: Spacing.lg },
   column: { gap: Spacing.md },
-  hero: {
+  profileCard: {
     borderRadius: Radius.lg,
     padding: Spacing.lg,
     gap: Spacing.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    marginHorizontal: ScreenPadding,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
+  cover: {
+    height: 92,
+    margin: -Spacing.lg,
+    marginBottom: 0,
+    overflow: 'hidden',
+  },
+  coverImage: { width: '100%', height: '100%' },
+  coverTint: { ...StyleSheet.absoluteFill, opacity: 0.42 },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,6 +501,39 @@ const styles = StyleSheet.create({
   },
   heroText: { gap: 2 },
   heroBio: { marginTop: Spacing.sm, opacity: 0.9 },
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end' },
+  editSheet: {
+    maxHeight: '88%',
+    padding: Spacing.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  editHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  editContent: { gap: Spacing.sm, paddingBottom: Spacing.xxxl },
+  imageActions: { gap: Spacing.sm, marginBottom: Spacing.sm },
+  editInput: {
+    minHeight: 48,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  editBio: { minHeight: 100, textAlignVertical: 'top' },
+  themeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  themeChoice: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   statRow: { flexDirection: 'row', gap: Spacing.md },
   stat: {
     flex: 1,

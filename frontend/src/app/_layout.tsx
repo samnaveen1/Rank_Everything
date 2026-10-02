@@ -16,7 +16,7 @@ export default function RootLayout() {
   const navigationTheme = useMemo(
     () => ({
       ...DefaultTheme,
-      dark: palette.background === '#0B1736',
+      dark: palette.background === '#000000',
       colors: {
         ...DefaultTheme.colors,
         primary: palette.primary,
